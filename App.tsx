@@ -13,6 +13,7 @@ import {
   Mic, UserRound, GraduationCap as TeacherIcon,
   Layers, Lock as LockIcon, Scale, PieChart
 } from 'lucide-react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 import { ViewState, UserProfile, JobTask, CourseContent, JobSector, FlashModule, QuizQuestion, ForumPost } from './types';
 import { COURSES, ALL_SIMULATIONS, GLOSSARY_DATA, FLASH_MODULES, ROLES_BY_SECTOR, DIFFICULTY_LEVELS } from './constants';
@@ -787,6 +788,7 @@ const App = () => {
       </main>
 
       <ABFProAssistant isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} user={user} addNotify={addNotify} />
+      <SpeedInsights />
     </div>
   );
 };
