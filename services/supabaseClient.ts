@@ -1,19 +1,20 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-// Configuration de l'environnement
-const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+// 1. Configuration pour Vite (Utilise import.meta.env)
+// Ces noms doivent correspondre exactement à ce que vous avez mis sur Vercel
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Détection du mode Production
-const isProduction = SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL.startsWith('http');
+// 2. Détection du mode Production
+// On vérifie que les clés existent et commencent par http
+const isProduction = !!(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL.startsWith('http'));
 
-// Client Supabase Réel (activé si clés présentes)
+// 3. Client Supabase Réel
 const realClient = isProduction 
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
   : null;
 
-// Système de Mock Persistant (LocalStorage) pour la démo sans backend
+// --- Système de Mock (Données de test locales) ---
 const mockStorage = {
   get: (table: string) => {
     try {
@@ -23,31 +24,32 @@ const mockStorage = {
   set: (table: string, data: any[]) => localStorage.setItem(`abf_mock_${table}`, JSON.stringify(data)),
   add: (table: string, item: any) => {
     const data = mockStorage.get(table);
-    const newItem = { ...item, id: item.id || Math.random().toString(36).substr(2, 9), created_at: new Date().toISOString() };
-    // Check for duplicates based on ID if provided
+    const newItem = { 
+      ...item, 
+      id: item.id || Math.random().toString(36).substr(2, 9), 
+      created_at: new Date().toISOString() 
+    };
     const existsIndex = data.findIndex((d: any) => d.id === newItem.id);
     if (existsIndex >= 0) {
-        data[existsIndex] = { ...data[existsIndex], ...newItem };
+      data[existsIndex] = { ...data[existsIndex], ...newItem };
     } else {
-        data.push(newItem);
+      data.push(newItem);
     }
     mockStorage.set(table, data);
     return newItem;
   }
 };
 
-// Client Hybride
+// 4. Export du Client Hybride (Bascule entre Réel et Mock)
 export const supabase = {
   auth: {
     signUp: async (creds: any) => {
       if (realClient) return realClient.auth.signUp(creds);
-      // Mock signup
       const user = { id: 'mock-user-' + Date.now(), email: creds.email || '', phone: creds.phone || '' };
       return { data: { user, session: { access_token: 'mock-jwt', user } }, error: null };
     },
     signInWithPassword: async (creds: any) => {
       if (realClient) return realClient.auth.signInWithPassword(creds);
-      // Mock login always success for demo if locally validated
       const user = { id: 'mock-user-id', email: creds.email };
       return { data: { user, session: { access_token: 'mock-jwt', user } }, error: null };
     },
@@ -61,67 +63,37 @@ export const supabase = {
     }
   },
   from: (table: string) => {
-    // Chainable query builder mock
-    let queryData = mockStorage.get(table);
-    let error: any = null;
+    if (realClient) return realClient.from(table);
 
+    // Mock Query Builder
+    let queryData = mockStorage.get(table);
     return {
-      select: (columns: string = '*') => {
-        if (realClient) return realClient.from(table).select(columns);
-        // Return a promise-like object for the chain
-        return {
-          eq: (col: string, val: any) => {
-            queryData = queryData.filter((row: any) => row[col] === val);
-            return {
-              single: async () => ({ data: queryData[0] || null, error: queryData.length ? null : { message: 'Not found' } }),
-              order: (col: string, { ascending = true }: any = {}) => {
-                 queryData.sort((a: any, b: any) => ascending ? (a[col] > b[col] ? 1 : -1) : (a[col] < b[col] ? 1 : -1));
-                 return {
-                    limit: (n: number) => ({
-                        then: (resolve: any) => resolve({ data: queryData.slice(0, n), error })
-                    }),
-                    then: (resolve: any) => resolve({ data: queryData, error })
-                 };
-              },
-              then: (resolve: any) => resolve({ data: queryData, error })
-            };
-          },
-          order: (col: string, { ascending = true }: any = {}) => {
-             queryData.sort((a: any, b: any) => ascending ? (a[col] > b[col] ? 1 : -1) : (a[col] < b[col] ? 1 : -1));
-             return {
-                limit: (n: number) => ({
-                    then: (resolve: any) => resolve({ data: queryData.slice(0, n), error })
-                }),
-                then: (resolve: any) => resolve({ data: queryData, error })
-             };
-          },
-          then: (resolve: any) => resolve({ data: queryData, error })
-        };
-      },
-      insert: async (data: any) => {
-        if (realClient) return realClient.from(table).insert(data);
-        const newItem = Array.isArray(data) ? data.map(d => mockStorage.add(table, d)) : mockStorage.add(table, data);
-        return { data: newItem, error: null };
-      },
-      update: (data: any) => {
-        if (realClient) return realClient.from(table).update(data);
-        return {
-            eq: async (col: string, val: any) => {
-                const items = mockStorage.get(table);
-                const updated = items.map((item: any) => {
-                    if (item[col] === val) return { ...item, ...data };
-                    return item;
-                });
-                mockStorage.set(table, updated);
-                return { data: updated.find((i: any) => i[col] === val), error: null };
-            }
-        };
-      },
-      upsert: async (data: any) => {
-        if (realClient) return realClient.from(table).upsert(data);
-        const res = mockStorage.add(table, data);
-        return { data: res, error: null };
-      },
+      select: (columns: string = '*') => ({
+        eq: (col: string, val: any) => ({
+          single: async () => ({ data: queryData.find((row: any) => row[col] === val) || null, error: null }),
+          order: (col: string, { ascending = true } = {}) => ({
+            then: (resolve: any) => resolve({ data: queryData, error: null })
+          }),
+          then: (resolve: any) => resolve({ data: queryData.filter((row: any) => row[col] === val), error: null })
+        }),
+        order: (col: string, { ascending = true } = {}) => ({
+          limit: (n: number) => ({
+            then: (resolve: any) => resolve({ data: queryData.slice(0, n), error: null })
+          }),
+          then: (resolve: any) => resolve({ data: queryData, error: null })
+        }),
+        then: (resolve: any) => resolve({ data: queryData, error: null })
+      }),
+      insert: async (data: any) => ({ data: mockStorage.add(table, data), error: null }),
+      update: (data: any) => ({
+        eq: async (col: string, val: any) => {
+          const items = mockStorage.get(table);
+          const updated = items.map((i: any) => i[col] === val ? { ...i, ...data } : i);
+          mockStorage.set(table, updated);
+          return { data, error: null };
+        }
+      }),
+      upsert: async (data: any) => ({ data: mockStorage.add(table, data), error: null }),
     };
   }
 };
