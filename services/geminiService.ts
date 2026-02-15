@@ -1,8 +1,8 @@
 import { ForumAiFeedback } from "../types";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-// On passe sur le modèle 8b, souvent plus facile d'accès pour les nouveaux comptes
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent";
+// CHANGEMENT : Passage en v1 stable (plus fiable que v1beta pour éviter le 404)
+const BASE_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 
 async function callGemini(prompt: string) {
   if (!API_KEY) throw new Error("Clé API absente dans Vercel");
@@ -19,8 +19,12 @@ async function callGemini(prompt: string) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Si même ici ça dit NOT_FOUND, il faudra créer une clé dans un "New Project"
+      // Affiche le message exact de Google (ex: API_KEY_INVALID ou LOCATION_NOT_SUPPORTED)
       throw new Error(data.error?.message || "Erreur Google");
+    }
+
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error("Aucune réponse reçue de l'IA.");
     }
 
     return data.candidates[0].content.parts[0].text;
@@ -33,7 +37,7 @@ async function callGemini(prompt: string) {
 
 export const askMentor = async (q: string, ctx: string) => {
   try {
-    const prompt = `Mentor ABF Academy Mali : ${q}. Contexte : ${ctx}`;
+    const prompt = `En tant que mentor ABF Academy au Mali, réponds à : ${q}. Contexte : ${ctx}`;
     return await callGemini(prompt);
   } catch (e: any) {
     return `⚠️ Diagnostic : ${e.message}`;
@@ -52,7 +56,7 @@ export const analyzeForumPost = async (title: string, content: string, sector: s
 
 export const generateInterviewScenario = async (role: string, difficulty: number) => {
   try {
-    const res = await callGemini(`Génère scénario : ${role}`);
+    const res = await callGemini(`Génère scénario JSON pour : ${role}`);
     const cleanRes = res.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanRes);
   } catch (e) {
@@ -83,7 +87,7 @@ export const evaluateInterviewAnswer = async (question: string, answer: string, 
 
 export const evaluateSimulationStep = async (sc: string, act: string) => {
   try {
-    const res = await callGemini(`Évalue : ${act}`);
+    const res = await callGemini(`Évalue l'action : ${act}`);
     const cleanRes = res.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanRes);
   } catch (e) {
@@ -93,7 +97,7 @@ export const evaluateSimulationStep = async (sc: string, act: string) => {
 
 export const checkRegulatoryCompliance = async (op: string, cl: string) => {
   try {
-    const res = await callGemini(`Vérifie : ${op}`);
+    const res = await callGemini(`Vérifie conformité : ${op}`);
     const cleanRes = res.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanRes);
   } catch (e) {
