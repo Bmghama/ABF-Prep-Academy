@@ -1,7 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css'; // <--- AJOUTEZ CETTE LIGNE
+
+// Le CSS est retiré temporairement pour corriger l'erreur de Build
+// On le remettra une fois que le site sera en ligne
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
