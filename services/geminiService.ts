@@ -1,8 +1,8 @@
 import { ForumAiFeedback } from "../types";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-// Utilisation du modèle gemini-pro (version la plus compatible)
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+// CORRECTION CRITIQUE : Changement du nom du modèle pour gemini-1.5-flash
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 /**
  * FONCTION UNIVERSELLE D'APPEL À L'IA
@@ -23,11 +23,11 @@ async function callGemini(prompt: string) {
 
     if (!response.ok) {
       const msg = data.error?.message || "Erreur inconnue";
-      throw new Error(`${msg}`);
+      throw new Error(msg);
     }
 
     if (!data.candidates || data.candidates.length === 0) {
-      throw new Error("Google n'a renvoyé aucune réponse.");
+      throw new Error("Aucune réponse reçue de l'IA.");
     }
 
     return data.candidates[0].content.parts[0].text;
@@ -43,7 +43,7 @@ export const askMentor = async (q: string, ctx: string) => {
     const prompt = `En tant que mentor expert ABF Academy au Mali, réponds à cette question : ${q}. Contexte : ${ctx}`;
     return await callGemini(prompt);
   } catch (e: any) {
-    return `⚠️ Diagnostic technique : ${e.message}`;
+    return `⚠️ Diagnostic : ${e.message}`;
   }
 };
 
