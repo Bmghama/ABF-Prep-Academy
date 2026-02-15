@@ -1,15 +1,12 @@
 import * as GoogleGenerativeAI from "@google/generative-ai";
 import { ForumAiFeedback } from "../types";
 
-// 1. RÉCUPÉRATION DE LA CLÉ (Syntaxe Vite)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-// 2. INITIALISATION SÉCURISÉE (Syntaxe ultra-compatible pour Vite/Vercel)
-const genAI = API_KEY 
-  ? new ( (GoogleGenerativeAI as any).GoogleGenAI || (GoogleGenerativeAI as any).default?.GoogleGenAI )(API_KEY) 
-  : null;
+// Utilisation d'une syntaxe que Vite ne peut pas contester au build
+const GenAIClass = (GoogleGenerativeAI as any).GoogleGenAI || (GoogleGenerativeAI as any).default;
+const genAI = API_KEY && GenAIClass ? new GenAIClass(API_KEY) : null;
 
-// Type definitions for simulation result
 interface SimulationResult {
   feedback: string;
   score: number;
@@ -20,93 +17,77 @@ interface SimulationResult {
   detailedExplanation: string;
   keyTermDefinition: string;
   fieldAdvice: string;
-  expertAnalysis?: string;
-  errors?: string[];
-  idealSolution?: string;
-  suggestion?: string;
 }
 
-// Helper pour obtenir le modèle sans crasher
 const getAiModel = (modelName: string = "gemini-1.5-flash") => {
   if (!genAI) return null;
   return genAI.getGenerativeModel({ model: modelName });
 };
 
-// --- SERVICES CORRIGÉS ---
+// --- TOUS LES SERVICES EXPORTÉS POUR APP.TSX ---
 
 export const analyzeForumPost = async (title: string, content: string, sector: string): Promise<ForumAiFeedback> => {
   const model = getAiModel();
-  if (!model) return { status: 'PARTIEL', explanation: "IA en attente de configuration.", keyTerm: "N/A", keyDefinition: "N/A", practicalAdvice: "N/A", suggestions: [] };
-
+  if (!model) return { status: 'PARTIEL', explanation: "IA non configurée", keyTerm: "N/A", keyDefinition: "N/A", practicalAdvice: "N/A", suggestions: [] };
   try {
-    const prompt = `TU ES UN PROFESSEUR EXPERT ABF ACADEMY (MALI/UEMOA). Secteur: ${sector}. Publication: "${title} - ${content}". Analyse et réponds en JSON: {"status": "CORRECT", "isCorrect": true, "explanation": "...", "keyTerm": "...", "keyDefinition": "...", "practicalAdvice": "...", "suggestions": []}`;
-    
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    return JSON.parse(text.replace(/```json/g, '').replace(/```/g, ''));
-  } catch (error) {
-    return { status: 'PARTIEL', explanation: "Erreur de connexion IA", keyTerm: "N/A", keyDefinition: "N/A", practicalAdvice: "N/A", suggestions: [] };
-  }
-};
-
-export const generateInterviewScenario = async (role: string, difficulty: number): Promise<any> => {
-  const model = getAiModel();
-  if (!model) return { companyName: "ABF Academy", scenarioContext: "Mode Démo", firstQuestion: "Pouvez-vous vous présenter ?" };
-
-  try {
-    const prompt = `Génère un scénario d'entretien pour ${role} (Difficulté ${difficulty}/5) au Mali. Format JSON: {"companyName": "...", "scenarioContext": "...", "clientSituation": "...", "simulatedDocuments": [], "firstQuestion": "..."}`;
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(`Analyse: ${title} ${content}`);
     return JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, ''));
-  } catch (e) {
-    return { scenarioContext: "Entretien standard", firstQuestion: "Parlez-moi de votre parcours." };
-  }
+  } catch (e) { return { status: 'PARTIEL', explanation: "Erreur", keyTerm: "N/A", keyDefinition: "N/A", practicalAdvice: "N/A", suggestions: [] }; }
 };
 
-// --- ALIAS POUR ÉVITER L'ERREUR DANS APP.TSX ---
+export const generateInterviewScenario = async (role: string, difficulty: number) => {
+  const model = getAiModel();
+  if (!model) return { companyName: "ABF Academy", firstQuestion: "Présentez-vous." };
+  try {
+    const result = await model.generateContent(`Génère entretien pour ${role}`);
+    return JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, ''));
+  } catch (e) { return { firstQuestion: "Parlez-moi de vous." }; }
+};
+
+// ON AJOUTE LES FONCTIONS QUE APP.TSX RÉCLAME
 export const generateInterviewQuestion = generateInterviewScenario;
 
-export const evaluateInterviewAnswer = async (question: string, answer: string, role: string, difficulty: number): Promise<SimulationResult> => {
+export const analyzeFinancialStatement = async (data: any) => {
   const model = getAiModel();
-  const errorRes = { score: 5, isCorrect: false, feedback: "IA non configurée.", detailedExplanation: "Veuillez vérifier les clés API.", keyTermDefinition: "N/A", fieldAdvice: "N/A", isComplete: false };
-  
-  if (!model) return errorRes;
-
+  if (!model) return { analysis: "Analyse indisponible en mode démo." };
   try {
-    const prompt = `Évalue cette réponse d'entretien: Q: "${question}", R: "${answer}". Poste: ${role}. Format JSON détaillé.`;
-    const result = await model.generateContent(prompt);
-    return JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, ''));
-  } catch (e) { 
-    return errorRes; 
-  }
+    const result = await model.generateContent(`Analyse ces chiffres: ${JSON.stringify(data)}`);
+    return { analysis: result.response.text() };
+  } catch (e) { return { analysis: "Erreur d'analyse." }; }
 };
 
-export const askMentor = async (question: string, userContext: string): Promise<string> => {
+export const evaluateInterviewAnswer = async (question: string, answer: string, role: string) => {
   const model = getAiModel();
-  if (!model) return "Désolé, je ne peux pas répondre pour le moment (Clé API manquante).";
-
+  if (!model) return { score: 0, feedback: "IA OFF" };
   try {
-    const prompt = `Tu es le mentor ABF Academy. Contexte: ${userContext}. Réponds à: "${question}"`;
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(`Évalue: ${answer}`);
+    return JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, ''));
+  } catch (e) { return { score: 0, feedback: "Erreur" }; }
+};
+
+export const askMentor = async (q: string, ctx: string) => {
+  const model = getAiModel();
+  if (!model) return "IA en attente.";
+  try {
+    const result = await model.generateContent(q);
     return result.response.text();
-  } catch (e) { return "Une erreur technique empêche la réponse."; }
+  } catch (e) { return "Erreur technique."; }
 };
 
-export const evaluateSimulationStep = async (scenario: string, userAction: string, history: string, role: string): Promise<SimulationResult> => {
+export const evaluateSimulationStep = async (sc: string, act: string) => {
   const model = getAiModel();
-  if (!model) return { feedback: "Action non analysée (IA OFF)", score: 0, isComplete: false, isCorrect: false, detailedExplanation: "N/A", keyTermDefinition: "N/A", fieldAdvice: "N/A" };
-
+  if (!model) return { feedback: "IA OFF", score: 0 };
   try {
-    const prompt = `Analyse l'action: "${userAction}" Scénario: ${scenario}. Format JSON.`;
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(`Action: ${act}`);
     return JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, ''));
-  } catch (e) { return { feedback: "Erreur analyse", score: 0, isComplete: true, isCorrect: false, detailedExplanation: "N/A", keyTermDefinition: "N/A", fieldAdvice: "N/A" }; }
+  } catch (e) { return { feedback: "Erreur", score: 0 }; }
 };
 
-export const checkRegulatoryCompliance = async (op: string, client: string) => {
+export const checkRegulatoryCompliance = async (op: string, cl: string) => {
   const model = getAiModel();
-  if (!model) return { riskLevel: "INCONNU", recommendation: "IA non configurée." };
+  if (!model) return { riskLevel: "INCONNU" };
   try {
-    const result = await model.generateContent(`Vérifie conformité LCB-FT UEMOA: ${op} pour ${client}. Format JSON.`);
+    const result = await model.generateContent(`Vérifie: ${op}`);
     return JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, ''));
-  } catch (e) { return { riskLevel: "ERREUR", recommendation: "Impossible d'analyser." }; }
+  } catch (e) { return { riskLevel: "ERREUR" }; }
 };
