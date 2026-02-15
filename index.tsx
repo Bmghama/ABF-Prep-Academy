@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Le CSS est retiré temporairement pour corriger l'erreur de Build
-// On le remettra une fois que le site sera en ligne
+// ON NE CHARGE AUCUN CSS ICI POUR ÉVITER L'ERREUR VERCEL
+// LE STYLE EST DÉJÀ GÉRÉ DANS TON INDEX.HTML VIA LE CDN TAILWIND
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
