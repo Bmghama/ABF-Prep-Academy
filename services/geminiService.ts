@@ -1,11 +1,12 @@
-import { GoogleGenAI } from "@google/generative-ai";
+import * as GoogleGenerativeAI from "@google/generative-ai";
 import { ForumAiFeedback } from "../types";
 
 // 1. RÉCUPÉRATION DE LA CLÉ (Syntaxe Vite)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-// 2. INITIALISATION SÉCURISÉE (Empêche l'écran noir si la clé est absente)
-const genAI = API_KEY ? new GoogleGenAI(API_KEY) : null;
+// 2. INITIALISATION SÉCURISÉE AVEC L'IMPORT GLOBAL
+// On utilise GoogleGenerativeAI.GoogleGenAI pour éviter l'erreur d'export
+const genAI = API_KEY ? new GoogleGenerativeAI.GoogleGenAI(API_KEY) : null;
 
 // Type definitions for simulation result
 interface SimulationResult {
@@ -97,7 +98,6 @@ export const evaluateSimulationStep = async (scenario: string, userAction: strin
   } catch (e) { return { feedback: "Erreur analyse", score: 0, isComplete: true, isCorrect: false, detailedExplanation: "N/A", keyTermDefinition: "N/A", fieldAdvice: "N/A" }; }
 };
 
-// Nouveaux services avec sécurité
 export const checkRegulatoryCompliance = async (op: string, client: string) => {
   const model = getAiModel();
   if (!model) return { riskLevel: "INCONNU", recommendation: "IA non configurée." };
