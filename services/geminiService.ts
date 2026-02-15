@@ -4,9 +4,10 @@ import { ForumAiFeedback } from "../types";
 // 1. RÉCUPÉRATION DE LA CLÉ (Syntaxe Vite)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-// 2. INITIALISATION SÉCURISÉE AVEC L'IMPORT GLOBAL
-// On utilise GoogleGenerativeAI.GoogleGenAI pour éviter l'erreur d'export
-const genAI = API_KEY ? new GoogleGenerativeAI.GoogleGenAI(API_KEY) : null;
+// 2. INITIALISATION SÉCURISÉE (Syntaxe ultra-compatible pour Vite/Vercel)
+const genAI = API_KEY 
+  ? new ( (GoogleGenerativeAI as any).GoogleGenAI || (GoogleGenerativeAI as any).default?.GoogleGenAI )(API_KEY) 
+  : null;
 
 // Type definitions for simulation result
 interface SimulationResult {
@@ -60,6 +61,9 @@ export const generateInterviewScenario = async (role: string, difficulty: number
     return { scenarioContext: "Entretien standard", firstQuestion: "Parlez-moi de votre parcours." };
   }
 };
+
+// --- ALIAS POUR ÉVITER L'ERREUR DANS APP.TSX ---
+export const generateInterviewQuestion = generateInterviewScenario;
 
 export const evaluateInterviewAnswer = async (question: string, answer: string, role: string, difficulty: number): Promise<SimulationResult> => {
   const model = getAiModel();
