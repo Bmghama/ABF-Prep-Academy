@@ -1,7 +1,7 @@
 {
   "name": "abf-prep-academy",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,21 +9,28 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-dom": "^19.2.4",
-    "react": "^19.2.4",
-    "recharts": "^3.7.0",
-    "lucide-react": "^0.564.0",
-    "@google/genai": "^1.41.0",
-    "react-markdown": "^10.1.0",
-    "canvas-confetti": "1.9.2",
-    "jspdf": "2.5.1",
-    "html2canvas": "1.4.1",
-    "@supabase/supabase-js": "^2.95.3"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7",
+    "lucide-react": "^0.394.0",
+    "@google/generative-ai": "^0.13.0",
+    "react-markdown": "^9.0.1",
+    "canvas-confetti": "^1.9.3",
+    "jspdf": "^2.5.1",
+    "html2canvas": "^1.4.1",
+    "@supabase/supabase-js": "^2.43.4",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@types/node": "^20.14.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.2.2",
+    "vite": "^5.3.1"
   }
 }
