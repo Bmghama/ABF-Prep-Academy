@@ -1,7 +1,8 @@
 import { ForumAiFeedback } from "../types";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const BASE_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
+// On repasse sur v1beta car c'est là que se trouve gemini-1.5-flash
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 /**
  * FONCTION UNIVERSELLE D'APPEL À L'IA
@@ -26,6 +27,10 @@ async function callGemini(prompt: string) {
       throw new Error(`${msg} (Status: ${status})`);
     }
 
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error("Google n'a renvoyé aucune réponse (Candidate empty)");
+    }
+
     return data.candidates[0].content.parts[0].text;
   } catch (err: any) {
     throw err;
@@ -33,6 +38,8 @@ async function callGemini(prompt: string) {
 }
 
 // --- SERVICES EXPORTÉS ---
+// Garde toutes tes fonctions askMentor, analyzeForumPost, etc. telles qu'elles sont.
+// Elles utiliseront automatiquement la nouvelle BASE_URL.
 
 export const askMentor = async (q: string, ctx: string) => {
   try {
@@ -43,6 +50,7 @@ export const askMentor = async (q: string, ctx: string) => {
   }
 };
 
+// ... (Assure-toi que les autres fonctions exportées sont présentes pour éviter l'erreur de build précédente)
 export const analyzeForumPost = async (title: string, content: string, sector: string): Promise<ForumAiFeedback> => {
   try {
     const prompt = `Analyse ce post forum (${title}) pour le secteur ${sector}. Réponds en JSON : {"status": "COMPLET", "explanation": "...", "keyTerm": "...", "keyDefinition": "...", "practicalAdvice": "...", "suggestions": []}`;
