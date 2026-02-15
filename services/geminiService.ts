@@ -1,8 +1,8 @@
 import { ForumAiFeedback } from "../types";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-// CORRECTION CRITIQUE : Changement du nom du modèle pour gemini-1.5-flash
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+// SOLUTION DE SECOURS : gemini-1.0-pro est le modèle le plus stable et compatible
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent";
 
 /**
  * FONCTION UNIVERSELLE D'APPEL À L'IA
@@ -51,7 +51,9 @@ export const analyzeForumPost = async (title: string, content: string, sector: s
   try {
     const prompt = `Analyse ce post forum (${title}) pour le secteur ${sector}. Réponds uniquement en JSON avec ce format: {"status": "COMPLET", "explanation": "...", "keyTerm": "...", "keyDefinition": "...", "practicalAdvice": "...", "suggestions": []}`;
     const res = await callGemini(prompt);
-    return JSON.parse(res.replace(/```json/g, '').replace(/```/g, ''));
+    // Nettoyage des balises markdown si l'IA en ajoute
+    const cleanRes = res.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanRes);
   } catch (e) {
     return { status: 'PARTIEL', explanation: "IA indisponible", keyTerm: "N/A", keyDefinition: "N/A", practicalAdvice: "N/A", suggestions: [] };
   }
@@ -61,7 +63,8 @@ export const generateInterviewScenario = async (role: string, difficulty: number
   try {
     const prompt = `Génère un scénario d'entretien JSON pour ${role} avec: {"companyName": "...", "firstQuestion": "..."}`;
     const res = await callGemini(prompt);
-    return JSON.parse(res.replace(/```json/g, '').replace(/```/g, ''));
+    const cleanRes = res.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanRes);
   } catch (e) {
     return { companyName: "ABF Academy", firstQuestion: "Pouvez-vous vous présenter ?" };
   }
@@ -82,7 +85,8 @@ export const evaluateInterviewAnswer = async (question: string, answer: string, 
   try {
     const prompt = `Évalue cette réponse : "${answer}" pour le poste ${role}. Réponds en JSON : {"score": 80, "feedback": "..."}`;
     const res = await callGemini(prompt);
-    return JSON.parse(res.replace(/```json/g, '').replace(/```/g, ''));
+    const cleanRes = res.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanRes);
   } catch (e) {
     return { score: 0, feedback: "Évaluation impossible." };
   }
@@ -92,7 +96,8 @@ export const evaluateSimulationStep = async (sc: string, act: string) => {
   try {
     const prompt = `Évalue l'action "${act}" dans le scénario "${sc}". Réponds en JSON : {"feedback": "...", "score": 10}`;
     const res = await callGemini(prompt);
-    return JSON.parse(res.replace(/```json/g, '').replace(/```/g, ''));
+    const cleanRes = res.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanRes);
   } catch (e) {
     return { feedback: "Erreur", score: 0 };
   }
@@ -102,7 +107,8 @@ export const checkRegulatoryCompliance = async (op: string, cl: string) => {
   try {
     const prompt = `Vérifie la conformité LCB-FT de : ${op}. Réponds en JSON : {"riskLevel": "BAS", "details": "..."}`;
     const res = await callGemini(prompt);
-    return JSON.parse(res.replace(/```json/g, '').replace(/```/g, ''));
+    const cleanRes = res.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanRes);
   } catch (e) {
     return { riskLevel: "INCONNU" };
   }
